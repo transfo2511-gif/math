@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공통수학1 탐구교실</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        math1: '#3b82f6', // 다항식 (파랑)
+                        math2: '#10b981', // 방정식과 부등식 (초록)
+                        math3: '#f59e0b', // 경우의 수 (주황)
+                        math4: '#8b5cf6', // 행렬 (보라)
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax (수식 렌더링) -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+        
+        /* 카드 호버 및 전환 효과 */
+        .subject-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .subject-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 아코디언 상세 내용 애니메이션 */
+        .card-details {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out, margin 0.4s ease-in-out;
+        }
+        .card-details.active {
+            max-height: 500px; /* 충분히 큰 값 */
+            opacity: 1;
+            margin-top: 1rem;
+        }
+
+        /* 캔버스 배경 */
+        #bg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0.4; pointer-events: none;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased relative min-h-screen">
+
+    <!-- 네비게이션 -->
+    <nav class="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    \(\sum\)
+                </div>
+                <span class="text-xl font-bold tracking-tight text-gray-900">공통수학1 탐구교실</span>
+            </div>
+            <div class="hidden md:flex space-x-6 text-sm font-medium text-gray-600">
+                <a href="#curriculum" class="hover:text-primary-600 transition-colors">단원 소개</a>
+                <a href="#" class="hover:text-primary-600 transition-colors">학습 자료실</a>
+                <a href="#" class="hover:text-primary-600 transition-colors">질문 게시판</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 배너 (히어로 섹션) -->
+    <header class="relative overflow-hidden bg-white border-b border-gray-100">
+        <canvas id="bg-canvas"></canvas> <!-- 인터랙티브 배경 -->
+        
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32 text-center">
+            <span class="inline-block py-1.5 px-4 rounded-full bg-primary-50 text-primary-700 text-sm font-bold mb-6 border border-primary-100 shadow-sm animate-float">
+                2022 개정 교육과정 반영
+            </span>
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 leading-tight">
+                수학의 기초를 다지는 <br class="hidden sm:block">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500">
+                    첫 번째 여정
+                </span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
+                다항식의 연산부터 새롭게 도입된 행렬까지.<br>
+                아래 카드들을 클릭하여 고등학교 1학년 수학의 핵심 개념들을 직관적으로 탐구해 보세요.
+            </p>
+            <a href="#curriculum" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-gray-900 border border-transparent rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                단원별 학습 시작하기 
+                <svg class="w-5 h-5 ml-2 -mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </a>
+        </div>
+    </header>
+
+    <main id="curriculum" class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">공통수학1 핵심 대단원</h2>
+            <p class="text-gray-500">카드를 클릭하면 각 단원의 상세 학습 목표와 개념을 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+            
+            <!-- 단원 1: 다항식 -->
+            <div class="subject-card bg-white rounded-3xl p-8 border border-gray-100 shadow-sm cursor-pointer group" onclick="toggleCard('card1')">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <span class="text-sm font-bold text-blue-500 tracking-wider">I. 첫 번째 단원</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mt-2 mb-3">다항식</h3>
+                        <p class="text-gray-600 line-clamp-2">문자와 식을 다루는 기본기! 복잡한 식을 간단하게 만들고, 미지수의 성질을 파헤쳐 봅니다.</p>
+                    </div>
+                    <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center ml-4 shrink-0 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                    </div>
+                </div>
+                
+                <!-- 상세 내용 (숨김) -->
+                <div id="card1" class="card-details">
+                    <div class="pt-6 border-t border-gray-100 mt-4">
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <div class="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">다항식의 연산</h4>
+                                    <p class="text-sm text-gray-500 mt-1">다항식의 덧셈, 뺄셈, 곱셈, 그리고 나눗셈의 원리를 배웁니다.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">항등식과 나머지정리</h4>
+                                    <p class="text-sm text-gray-500 mt-1">\((x-a)\)로 나누었을 때의 나머지를 식을 직접 나누지 않고 구하는 마법 같은 정리!</p>
+                                    <div class="mt-2 bg-gray-50 p-2 rounded text-center text-sm font-mono border border-gray-100">\( P(x) = (x-a)Q(x) + R \implies P(a) = R \)</div>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">인수분해</h4>
+                                    <p class="text-sm text-gray-500 mt-1">하나의 다항식을 여러 다항식의 곱으로 분해하여 방정식 풀이의 기초를 마련합니다.</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="w-full mt-6 py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold rounded-xl transition-colors">인터랙티브 학습하기 &rarr;</button>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                    <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+
+            <!-- 단원 2: 방정식과 부등식 -->
+            <div class="subject-card bg-white rounded-3xl p-8 border border-gray-100 shadow-sm cursor-pointer group" onclick="toggleCard('card2')">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <span class="text-sm font-bold text-green-500 tracking-wider">II. 두 번째 단원</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mt-2 mb-3">방정식과 부등식</h3>
+                        <p class="text-gray-600 line-clamp-2">실수 너머의 수 '복소수'를 도입하고, 수식과 그래프(함수) 사이의 놀라운 관계를 탐구합니다.</p>
+                    </div>
+                    <div class="w-16 h-16 rounded-2xl bg-green-50 text-green-500 flex items-center justify-center ml-4 shrink-0 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                    </div>
+                </div>
+                
+                <!-- 상세 내용 (숨김) -->
+                <div id="card2" class="card-details">
+                    <div class="pt-6 border-t border-gray-100 mt-4">
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <div class="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">복소수와 이차방정식</h4>
+                                    <p class="text-sm text-gray-500 mt-1">상상 속의 수 \(i = \sqrt{-1}\)를 통해 모든 이차방정식의 근을 구해봅니다.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">이차방정식과 이차함수</h4>
+                                    <p class="text-sm text-gray-500 mt-1">방정식의 실근이 곧 그래프와 \(x\)축의 교점임을 시각적으로 이해합니다.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">여러 가지 방정식과 부등식</h4>
+                                    <p class="text-sm text-gray-500 mt-1">고차방정식, 연립방정식, 그리고 이차부등식의 해법을 익힙니다.</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="w-full mt-6 py-3 bg-green-50 hover:bg-green-100 text-green-600 font-bold rounded-xl transition-colors">인터랙티브 학습하기 &rarr;</button>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-center text-gray-400 group-hover:text-green-500 transition-colors">
+                    <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+
+            <!-- 단원 3: 경우의 수 -->
+            <div class="subject-card bg-white rounded-3xl p-8 border border-gray-100 shadow-sm cursor-pointer group" onclick="toggleCard('card3')">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <span class="text-sm font-bold text-amber-500 tracking-wider">III. 세 번째 단원</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mt-2 mb-3">경우의 수</h3>
+                        <p class="text-gray-600 line-clamp-2">어떤 사건이 일어날 수 있는 모든 가짓수! 합리적이고 체계적으로 경우의 수를 세는 방법을 배웁니다.</p>
+                    </div>
+                    <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center ml-4 shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                    </div>
+                </div>
+                
+                <!-- 상세 내용 (숨김) -->
+                <div id="card3" class="card-details">
+                    <div class="pt-6 border-t border-gray-100 mt-4">
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <div class="bg-amber-100 text-amber-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">경우의 수 (합의 법칙/곱의 법칙)</h4>
+                                    <p class="text-sm text-gray-500 mt-1">동시에 일어나지 않는 사건과 연속해서 일어나는 사건을 구분하여 셉니다.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-amber-100 text-amber-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">순열 (Permutation)</h4>
+                                    <p class="text-sm text-gray-500 mt-1">서로 다른 것들 중 몇 개를 선택해 <strong>순서대로</strong> 나열하는 방법의 수 (\( _n\text{P}_r \))</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-amber-100 text-amber-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">3</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">조합 (Combination)</h4>
+                                    <p class="text-sm text-gray-500 mt-1">순서에 상관없이 서로 다른 것들 중에서 <strong>선택만</strong> 하는 방법의 수 (\( _n\text{C}_r \))</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="w-full mt-6 py-3 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-xl transition-colors">인터랙티브 학습하기 &rarr;</button>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-center text-gray-400 group-hover:text-amber-500 transition-colors">
+                    <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+
+            <!-- 단원 4: 행렬 (2022 개정) -->
+            <div class="subject-card bg-white rounded-3xl p-8 border border-gray-100 shadow-sm cursor-pointer group relative overflow-hidden" onclick="toggleCard('card4')">
+                <div class="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl z-10">2022 개정 신설</div>
+                <div class="flex items-start justify-between relative z-10">
+                    <div class="flex-1">
+                        <span class="text-sm font-bold text-purple-500 tracking-wider">IV. 네 번째 단원</span>
+                        <h3 class="text-2xl font-bold text-gray-900 mt-2 mb-3">행렬</h3>
+                        <p class="text-gray-600 line-clamp-2">수나 문자를 직사각형 모양으로 배열한 것. 데이터 과학과 인공지능 시대의 핵심 수학 도구를 경험합니다.</p>
+                    </div>
+                    <div class="w-16 h-16 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center ml-4 shrink-0 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    </div>
+                </div>
+                
+                <!-- 상세 내용 (숨김) -->
+                <div id="card4" class="card-details relative z-10">
+                    <div class="pt-6 border-t border-gray-100 mt-4">
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <div class="bg-purple-100 text-purple-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">1</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">행렬의 뜻과 덧셈, 뺄셈</h4>
+                                    <p class="text-sm text-gray-500 mt-1">행렬의 형태(행과 열)를 이해하고, 같은 꼴의 행렬끼리 더하거나 빼는 방법을 익힙니다.</p>
+                                    <div class="mt-2 bg-gray-50 p-2 rounded text-center text-sm font-mono border border-gray-100">
+                                        \( \begin{pmatrix} a & b \\ c & d \end{pmatrix} \)
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <div class="bg-purple-100 text-purple-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">2</div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">행렬의 실수배와 곱셈</h4>
+                                    <p class="text-sm text-gray-500 mt-1">행렬에 실수를 곱하는 방법과, 두 행렬을 곱하는 독특하고 유용한 규칙을 배웁니다.</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <button class="w-full mt-6 py-3 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold rounded-xl transition-colors">인터랙티브 학습하기 &rarr;</button>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-center text-gray-400 group-hover:text-purple-500 transition-colors relative z-10">
+                    <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="bg-gray-50 border-t border-gray-200 mt-12 py-10">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex justify-center items-center space-x-2 mb-4 text-gray-400">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                <span class="font-bold text-lg">고등학교 수학 탐구교실</span>
+            </div>
+            <p class="text-gray-500 text-sm">본 자료는 2022 개정 고등학교 교육과정 '공통수학1' 과목의 이해를 돕기 위해 제작되었습니다.</p>
+            <p class="text-gray-400 text-xs mt-2">&copy; 2024 Math Teacher. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 1. 아코디언 카드 토글 기능
+        function toggleCard(cardId) {
+            const card = document.getElementById(cardId);
+            const allCards = document.querySelectorAll('.card-details');
+            
+            // 다른 카드 닫기 (아코디언 스타일)
+            allCards.forEach(c => {
+                if(c.id !== cardId && c.classList.contains('active')) {
+                    c.classList.remove('active');
+                }
+            });
+
+            // 선택한 카드 토글
+            card.classList.toggle('active');
+
+            // 화살표 애니메이션 토글 (위/아래)
+            const icon = card.nextElementSibling.querySelector('svg');
+            if (card.classList.contains('active')) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>';
+                icon.classList.remove('animate-bounce');
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+                icon.classList.add('animate-bounce');
+            }
+        }
+
+        // 2. 배경 인터랙티브 캔버스 (수학 기호 파티클 애니메이션)
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const symbols = ['+', '-', '×', '÷', '=', '∞', '∫', '∑', 'π', 'θ', '△', '∈', '⊂'];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight; // 헤더 부분에 집중
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class MathParticle {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * canvas.height; // 초기 위치 랜덤 분배
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + 50; // 아래에서 시작
+                this.size = Math.random() * 15 + 10;
+                this.speed = Math.random() * 0.5 + 0.2;
+                this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                this.opacity = Math.random() * 0.3 + 0.1;
+                this.color = `#${Math.floor(Math.random()*16777215).toString(16)}`; // 랜덤 컬러 또는 고정 컬러
+                this.drift = (Math.random() - 0.5) * 0.5;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += this.drift;
+                
+                // 화면 위로 벗어나면 리셋
+                if (this.y < -50) {
+                    this.reset();
+                }
+            }
+            draw() {
+                ctx.font = `${this.size}px Arial`;
+                ctx.fillStyle = `rgba(156, 163, 175, ${this.opacity})`; // tailwind gray-400 기반
+                ctx.textAlign = 'center';
+                ctx.fillText(this.symbol, this.x, this.y);
+            }
+        }
+
+        // 파티클 생성
+        function initParticles() {
+            particles = [];
+            const particleCount = window.innerWidth < 768 ? 20 : 40; // 모바일/PC 개수 조절
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new MathParticle());
+            }
+        }
+        initParticles();
+
+        // 애니메이션 루프
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        
+        // 창 크기 변경 시 파티클 재설정
+        window.addEventListener('resize', () => {
+            initParticles();
+        });
+
+        // 애니메이션 시작
+        animate();
+    </script>
+</body>
+</html>
