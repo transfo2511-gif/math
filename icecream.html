@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>아이스크림 가게 점장님 되기 : 경우의 수 마스터</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a' },
+                        pinky: { 100: '#ffe4e6', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48' },
+                        mint: { 100: '#ccfbf1', 400: '#2dd4bf', 500: '#14b8a6' },
+                        choco: { 100: '#f5f5f4', 600: '#78350f', 800: '#451a03' }
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'],
+                        cute: ['Gaegu', 'Pretendard', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- MathJax (LaTeX 수식 렌더링) -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Canvas Confetti (축하 효과) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap');
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #fdf2f8; /* pink-50 */
+            touch-action: manipulation;
+        }
+
+        .font-cute { font-family: 'Gaegu', cursive; }
+
+        /* 마법의 플로팅 애니메이션 */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+        }
+        .animate-float { animation: floatSlow 4s ease-in-out infinite; }
+
+        @keyframes bounceGentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-gentle { animation: bounceGentle 2s ease-in-out infinite; }
+
+        /* 포스기 버튼 입체 효과 */
+        .pos-btn {
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            box-shadow: 0 4px 0 #cbd5e1;
+            transition: all 0.1s ease;
+        }
+        .pos-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #cbd5e1;
+        }
+
+        /* 탭 active 버튼 */
+        .tab-btn.active {
+            background-color: #f43f5e;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.3);
+        }
+
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #fbcfe8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #f43f5e; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between selection:bg-pinky-100 selection:text-pinky-600">
+
+    <!-- 상단 네비게이션 헤더 -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-pink-100 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-pinky-500 to-amber-400 rounded-2xl flex items-center justify-center text-white text-2xl shadow-md animate-bounce-gentle">
+                    🍨
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg md:text-xl text-slate-900 flex items-center gap-2">
+                        <span>경우의 수 아이스크림 파크</span>
+                        <span class="text-xs bg-pink-100 text-pinky-600 px-2 py-0.5 rounded-full font-semibold">고등수학</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">순열과 조합으로 손님의 완벽한 레시피를 찾아주세요!</p>
+                </div>
+            </div>
+
+            <!-- 상태 대시보드 (골드 & 평점) -->
+            <div class="flex items-center space-x-3 bg-pink-50/80 px-3 py-1.5 rounded-2xl border border-pink-200">
+                <div class="flex items-center space-x-1 text-amber-600 font-bold text-sm">
+                    <span>🪙</span>
+                    <span id="gold-display">0</span>
+                    <span class="text-xs text-amber-500 font-normal">G</span>
+                </div>
+                <div class="h-4 w-[1px] bg-pink-200"></div>
+                <div class="flex items-center space-x-1 text-pinky-600 font-bold text-sm">
+                    <span>⭐</span>
+                    <span id="rating-display">5.0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 메뉴 탭 -->
+        <div class="max-w-6xl mx-auto px-4 flex space-x-2 border-t border-pink-50 py-2">
+            <button onclick="switchTab('game')" id="tab-game" class="tab-btn active px-4 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5">
+                <span>🏪 영업 모드</span>
+            </button>
+            <button onclick="switchTab('sandbox')" id="tab-sandbox" class="tab-btn bg-slate-100 text-slate-600 px-4 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-slate-200">
+                <span>🔬 메뉴 연구소 (시뮬레이터)</span>
+            </button>
+            <button onclick="switchTab('cheatsheet')" id="tab-cheatsheet" class="tab-btn bg-slate-100 text-slate-600 px-4 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-slate-200">
+                <span>📖 공식 족보</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 구역 -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+
+        <!-- 1. 영업 모드 (게임 진행) -->
+        <section id="section-game" class="space-y-6">
+            
+            <!-- 스테이지 네비게이션 프로그레스 -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-pink-100 flex items-center justify-between overflow-x-auto gap-2">
+                <div class="flex items-center space-x-2 shrink-0">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">STAGE</span>
+                    <span id="stage-badge" class="bg-pinky-500 text-white font-extrabold text-sm px-2.5 py-0.5 rounded-lg">1/6</span>
+                </div>
+                <div class="flex items-center space-x-2 min-w-[280px] flex-1 px-2" id="stage-bullets">
+                    <!-- JS로 동적 생성 -->
+                </div>
+                <button onclick="generateRandomStage()" class="shrink-0 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-2 rounded-xl transition-colors flex items-center gap-1">
+                    <span>🎲 무한 랜덤 주문</span>
+                </button>
+            </div>
+
+            <!-- 영업 메인 플레이어 구역 (2열 그리드) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                <!-- 왼쪽 (7열): 손님 및 주문 상황판 -->
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <!-- 손님 캐릭터 & 주문 말풍선 카드 -->
+                    <div class="bg-white rounded-3xl p-6 shadow-md border-2 border-pink-100 relative overflow-hidden animate-float">
+                        <div class="absolute top-0 right-0 bg-gradient-to-l from-pink-200 to-transparent w-32 h-32 rounded-bl-full opacity-30 pointer-events-none"></div>
+
+                        <!-- 손님 헤더 정보 -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div id="customer-avatar" class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-pink-200">
+                                    👧
+                                </div>
+                                <div>
+                                    <h3 id="customer-name" class="font-bold text-slate-800 text-base">꼬마 손님 민지</h3>
+                                    <span id="order-tag" class="text-xs font-semibold text-pinky-600 bg-pink-50 px-2 py-0.5 rounded-md border border-pink-100">기초 : 곱의 법칙</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block">제한시간</span>
+                                <span id="timer-display" class="font-mono text-lg font-bold text-slate-700">∞</span>
+                            </div>
+                        </div>
+
+                        <!-- 주문 대사 말풍선 -->
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 relative mb-4">
+                            <div class="absolute -top-2 left-8 w-4 h-4 bg-slate-50 border-t border-l border-slate-200 rotate-45"></div>
+                            <p id="dialogue-text" class="text-slate-700 text-sm md:text-base leading-relaxed font-medium">
+                                "안녕하세요! 달콤한 아이스크림 주세요!"
+                            </p>
+                        </div>
+
+                        <!-- 주문 스펙 요약 상자 -->
+                        <div class="bg-pink-50/60 rounded-2xl p-4 border border-pink-100 space-y-2">
+                            <div class="text-xs font-bold text-pinky-600 flex items-center gap-1">
+                                <span>📜</span> <span>손님이 지정한 주문 조건</span>
+                            </div>
+                            <p id="question-prompt" class="text-slate-800 font-semibold text-base leading-snug">
+                                조건 로딩 중...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 현재 매장 메뉴판 레퍼런스 카드 -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                            <h4 class="font-bold text-sm text-slate-700 flex items-center gap-1.5">
+                                <span>📋</span> <span>오늘의 가게 재료 메뉴판</span>
+                            </h4>
+                            <span class="text-xs text-slate-400">경우의 수 계산 참고용</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs" id="menu-board-content">
+                            <!-- JS로 동적 채움 -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 오른쪽 (5열): 계산 포스기 (POS) & 답안 입력 -->
+                <div class="lg:col-span-5 space-y-4">
+                    
+                    <div class="bg-slate-900 rounded-3xl p-5 text-white shadow-xl border-4 border-slate-800 space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                <span class="text-xs text-slate-400 font-mono ml-2">POS REGISTER v1.0</span>
+                            </div>
+                            <button onclick="toggleHintModal()" class="text-xs text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-1">
+                                💡 힌트 보기
+                            </button>
+                        </div>
+
+                        <!-- POS 화면 디스플레이 -->
+                        <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800 space-y-1 text-right">
+                            <span class="text-xs text-slate-500 font-mono block">CALCULATED COMBINATIONS</span>
+                            <div id="pos-display" class="font-mono text-3xl md:text-4xl font-extrabold text-emerald-400 tracking-wider h-12 flex items-center justify-end overflow-x-auto">
+                                _
+                            </div>
+                        </div>
+
+                        <!-- 키패드 그리드 -->
+                        <div class="grid grid-cols-3 gap-2.5 pt-2">
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('1')">1</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('2')">2</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('3')">3</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('4')">4</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('5')">5</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('6')">6</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('7')">7</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('8')">8</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('9')">9</button>
+                            
+                            <button class="pos-btn py-3 rounded-xl text-rose-600 font-bold text-lg" onclick="pressKey('DEL')">⌫</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-800 font-bold text-xl" onclick="pressKey('0')">0</button>
+                            <button class="pos-btn py-3 rounded-xl text-slate-500 font-bold text-lg" onclick="pressKey('CLEAR')">C</button>
+                        </div>
+
+                        <!-- 주문 제출 액션 버튼 -->
+                        <button onclick="submitOrderAnswer()" id="submit-btn" class="w-full py-4 bg-gradient-to-r from-pinky-500 to-rose-600 hover:from-pinky-600 hover:to-rose-700 text-white font-extrabold text-lg rounded-2xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center space-x-2">
+                            <span>🛎️ 주문 완성! (계산 제출)</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- 2. 메뉴 연구소 (자유 시뮬레이터 모드) -->
+        <section id="section-sandbox" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                <div class="border-b border-slate-100 pb-4 mb-6">
+                    <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <span>🔬 아이스크림 메뉴 연구소</span>
+                        <span class="text-xs bg-teal-100 text-teal-700 font-bold px-2.5 py-1 rounded-full">실시간 가짓수 시뮬레이터</span>
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        재료의 개수와 조합 조건을 마음대로 변경해보세요! 수식과 가짓수가 실시간으로 어떻게 달라지는지 관찰할 수 있습니다.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <!-- 컨트롤 슬라이더 -->
+                    <div class="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-bold text-slate-700">콘/컵 용기 종류 ($n_c$)</label>
+                                <span id="sb-val-cone" class="font-bold text-pinky-600 text-sm">3개</span>
+                            </div>
+                            <input type="range" id="sb-range-cone" min="1" max="5" value="3" class="w-full accent-pinky-500 cursor-pointer" oninput="updateSandbox()">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-bold text-slate-700">전체 아이스크림 맛 개수 ($n$)</label>
+                                <span id="sb-val-n" class="font-bold text-pinky-600 text-sm">8개</span>
+                            </div>
+                            <input type="range" id="sb-range-n" min="2" max="12" value="8" class="w-full accent-pinky-500 cursor-pointer" oninput="updateSandbox()">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-bold text-slate-700">선택할 맛 개수 ($r$)</label>
+                                <span id="sb-val-r" class="font-bold text-pinky-600 text-sm">3개</span>
+                            </div>
+                            <input type="range" id="sb-range-r" min="1" max="5" value="3" class="w-full accent-pinky-500 cursor-pointer" oninput="updateSandbox()">
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-bold text-slate-700 block mb-2">맛 선택 방식 (순서 유무)</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button id="sb-mode-comb" onclick="setSandboxPickMode('comb')" class="py-2.5 rounded-xl border border-pinky-500 bg-pink-50 text-pinky-600 font-bold text-xs flex flex-col items-center">
+                                    <span>조합 $_n C_r$</span>
+                                    <span class="text-[10px] text-slate-500 font-normal">순서 없이 컵에 담기</span>
+                                </button>
+                                <button id="sb-mode-perm" onclick="setSandboxPickMode('perm')" class="py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs flex flex-col items-center hover:bg-slate-50">
+                                    <span>순열 $_n P_r$</span>
+                                    <span class="text-[10px] text-slate-500 font-normal">위아래 순서대로 쌓기</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-sm font-bold text-slate-700">토핑 종류 ($n_t$)</label>
+                                <span id="sb-val-topping" class="font-bold text-pinky-600 text-sm">4개</span>
+                            </div>
+                            <input type="range" id="sb-range-topping" min="0" max="6" value="4" class="w-full accent-pinky-500 cursor-pointer" oninput="updateSandbox()">
+                        </div>
+                    </div>
+
+                    <!-- 결과 계산 디스플레이 카드 -->
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-br from-pink-50 to-amber-50 rounded-2xl p-6 border border-pink-200 space-y-4">
+                            <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                                <span>🧮</span> <span>실시간 조합 계산식</span>
+                            </h3>
+
+                            <div class="bg-white rounded-xl p-4 shadow-inner border border-pink-100 text-center space-y-2">
+                                <p class="text-xs text-slate-500">적용된 곱의 법칙 & 선택 공식</p>
+                                <div id="sb-formula-math" class="text-base md:text-xl font-mono text-slate-800">
+                                    \( \text{총 경우의 수} = n_c \times {}_n\text{C}_r \times (n_t + 1) \)
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 text-white rounded-xl p-5 text-center space-y-1">
+                                <span class="text-xs text-emerald-400 font-mono tracking-widest block">TOTAL COMBINATIONS</span>
+                                <div id="sb-result-total" class="text-4xl font-extrabold text-emerald-400 font-mono">
+                                    0
+                                </div>
+                                <span class="text-xs text-slate-400 block">가지의 서로 다른 아이스크림 주문이 가능합니다!</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-800 mb-2">💡 점장님의 수학 팁</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed" id="sb-explanation-text">
+                                메뉴판 구성만 조금 바꿔도 만들어질 수 있는 아이스크림 조합의 가짓수가 폭발적으로 늘어납니다! 이것이 바로 경우의 수의 힘입니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 공식 족보 (개념 정리) -->
+        <section id="section-cheatsheet" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <span>📖 경우의 수 필승 공식 족보</span>
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">아이스크림 가게 주문 문제를 해결할 때 필요한 핵심 개념들입니다.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 1. 합의 법칙 & 곱의 법칙 -->
+                    <div class="bg-amber-50/60 rounded-2xl p-5 border border-amber-200 space-y-3">
+                        <div class="flex items-center space-x-2 text-amber-800 font-bold text-base">
+                            <span class="bg-amber-200 px-2 py-0.5 rounded-lg text-xs">기초</span>
+                            <h3>합의 법칙과 곱의 법칙</h3>
+                        </div>
+                        <ul class="text-xs text-slate-700 space-y-2 leading-relaxed">
+                            <li class="bg-white p-2.5 rounded-xl border border-amber-100">
+                                <strong class="text-amber-700 block mb-1">➕ 합의 법칙 (OR / 또는)</strong>
+                                동시에 일어나지 않는 두 사건 $A, B$에 대하여 사건 $A$가 $m$가지, 사건 $B$가 $n$가지 일 때 $\implies m + n$ 가지
+                            </li>
+                            <li class="bg-white p-2.5 rounded-xl border border-amber-100">
+                                <strong class="text-amber-700 block mb-1">✖️ 곱의 법칙 (AND / 그리고, 이어서)</strong>
+                                사건 $A$가 $m$가지 일어나고, 그 각각에 대해 사건 $B$가 $n$가지 일어날 때 $\implies m \times n$ 가지
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 2. 순열 -->
+                    <div class="bg-rose-50/60 rounded-2xl p-5 border border-rose-200 space-y-3">
+                        <div class="flex items-center space-x-2 text-rose-800 font-bold text-base">
+                            <span class="bg-rose-200 px-2 py-0.5 rounded-lg text-xs">순서 O</span>
+                            <h3>순열 (Permutation: $_n P_r$)</h3>
+                        </div>
+                        <div class="text-xs text-slate-700 space-y-2 leading-relaxed">
+                            <p class="bg-white p-2.5 rounded-xl border border-rose-100">
+                                서로 다른 $n$개 중에서 <strong>순서를 생각하여</strong> $r$개를 택해 일렬로 나열하는 경우의 수.
+                            </p>
+                            <div class="bg-white p-3 rounded-xl border border-rose-100 text-center font-mono text-sm">
+                                \( {}_n\text{P}_r = n \times (n-1) \times \dots \times (n-r+1) = \frac{n!}{(n-r)!} \)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 조합 -->
+                    <div class="bg-teal-50/60 rounded-2xl p-5 border border-teal-200 space-y-3">
+                        <div class="flex items-center space-x-2 text-teal-800 font-bold text-base">
+                            <span class="bg-teal-200 px-2 py-0.5 rounded-lg text-xs">순서 X</span>
+                            <h3>조합 (Combination: $_n C_r$)</h3>
+                        </div>
+                        <div class="text-xs text-slate-700 space-y-2 leading-relaxed">
+                            <p class="bg-white p-2.5 rounded-xl border border-teal-100">
+                                서로 다른 $n$개 중에서 <strong>순서에 상관없이</strong> $r$개를 뽑기만 하는 경우의 수.
+                            </p>
+                            <div class="bg-white p-3 rounded-xl border border-teal-100 text-center font-mono text-sm">
+                                \( {}_n\text{C}_r = \frac{{}_n\text{P}_r}{r!} = \frac{n!}{r!(n-r)!} \)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 여집합 및 특수 조건 -->
+                    <div class="bg-purple-50/60 rounded-2xl p-5 border border-purple-200 space-y-3">
+                        <div class="flex items-center space-x-2 text-purple-800 font-bold text-base">
+                            <span class="bg-purple-200 px-2 py-0.5 rounded-lg text-xs">응용</span>
+                            <h3>'적어도 ~'와 제한조건 문제</h3>
+                        </div>
+                        <ul class="text-xs text-slate-700 space-y-2 leading-relaxed">
+                            <li class="bg-white p-2.5 rounded-xl border border-purple-100">
+                                <strong class="text-purple-700 block mb-1">🔄 여집합 활용 ('적어도' 조건)</strong>
+                                (원하는 경우의 수) = (전체 경우의 수) - (반대되는 사건의 경우의 수)
+                            </li>
+                            <li class="bg-white p-2.5 rounded-xl border border-purple-100">
+                                <strong class="text-purple-700 block mb-1">🚫 이웃하지 않거나/동시 제외 조건</strong>
+                                제외해야 하는 특수 조합을 전체에서 빼거나, 사건을 여러 케이스로 나누어 더합니다.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 힌트 및 해설 모달 -->
+    <div id="hint-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-pink-100 space-y-4 animate-bounce-gentle">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                    <span>💡</span> <span id="modal-title">힌트 및 상세 풀이</span>
+                </h3>
+                <button onclick="toggleHintModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+
+            <div id="modal-content" class="space-y-3 text-sm text-slate-700 leading-relaxed">
+                <!-- JS로 내용 채움 -->
+            </div>
+
+            <button id="modal-action-btn" onclick="toggleHintModal()" class="w-full py-3 bg-pinky-500 hover:bg-pinky-600 text-white font-bold rounded-xl transition-colors">
+                확인했습니다!
+            </button>
+        </div>
+    </div>
+
+    <!-- 하단 푸터 -->
+    <footer class="bg-white border-t border-pink-100 py-6 mt-8">
+        <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-400 space-y-1">
+            <p>고등학교 수학 '경우의 수' 단원 탐구용 인터랙티브 웹 애플리케이션</p>
+            <p>&copy; 2026 Ice Cream Combinatorics Park. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. Web Audio API 효과음 생성기 (외부 파일 없이 작동) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.setValueAtTime(180, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // --- 2. 게임 데이터 및 스테이지 세팅 ---
+        const stages = [
+            {
+                stageNum: 1,
+                title: "기초 : 곱의 법칙",
+                customerName: "초등학생 민지",
+                avatar: "👧",
+                dialogue: "안녕하세요 점장님! 맛있는 아이스크림 조합이 총 몇 가지인지 궁금해요!",
+                question: "용기 3종류 (바삭 와플콘, 슈가콘, 종이컵) 중 1개, 아이스크림 8가지 맛 중 1개, 토핑 4종류 중 1개를 골라 만드는 총 경우의 수는?",
+                answer: 96, // 3 * 8 * 4
+                hint: "각각 선택하는 사건이 연속하여 일어나므로 **곱의 법칙**을 적용합니다.<br>\\(3 \\times 8 \\times 4 = 96\\)",
+                menu: {
+                    cones: ["와플콘", "슈가콘", "종이컵"],
+                    flavors: ["딸기", "초코", "바닐라", "민트", "녹차", "블루베리", "쿠키", "망고"],
+                    toppings: ["체리", "아몬드", "스프링클", "초코시럽"]
+                }
+            },
+            {
+                stageNum: 2,
+                title: "조합 : nCr",
+                customerName: "대학생 수현",
+                avatar: "👩‍🎓",
+                dialogue: "친구들과 나눠먹으려고 파인트 컵을 사러 왔어요!",
+                question: "매장의 프리미엄 10가지 아이스크림 맛 중에서 **서로 다른 3가지 맛**을 순서 상관없이 한 컵에 담는 경우의 수는?",
+                answer: 120, // 10C3 = (10*9*8)/(3*2*1) = 120
+                hint: "맛을 뽑는 순서는 상관없으므로 **조합( \\({}_n\\text{C}_r\\) )**입니다.<br>\\({}_{10}\\text{C}_3 = \\frac{10 \\times 9 \\times 8}{3 \\times 2 \\times 1} = 120\\)",
+                menu: {
+                    cones: ["파인트 컵"],
+                    flavors: ["10가지 프리미엄 맛"],
+                    toppings: ["없음"]
+                }
+            },
+            {
+                stageNum: 3,
+                title: "순열 : nPr",
+                customerName: "디저트 마니아 동우",
+                avatar: "👨‍🍳",
+                dialogue: "저는 인스타용 3단 대형 콘을 주문할게요! 아래, 중간, 위 쌓는 순서가 아주 중요해요!",
+                question: "대표 6가지 맛 중 서로 다른 3가지 맛을 선택해 **아래, 중간, 위 순서대로 3단으로 쌓는** 경우의 수는?",
+                answer: 120, // 6P3 = 6*5*4 = 120
+                hint: "쌓는 위아래 **순서가 구분**되므로 **순열( \\({}_n\\text{P}_r\\) )**입니다.<br>\\({}_6\\text{P}_3 = 6 \\times 5 \\times 4 = 120\\)",
+                menu: {
+                    cones: ["3단 대형콘"],
+                    flavors: ["6가지 대표 맛"],
+                    toppings: ["없음"]
+                }
+            },
+            {
+                stageNum: 4,
+                title: "제한조건 조합",
+                customerName: "깐깐한 미식가 태민",
+                avatar: "🧔",
+                dialogue: "저는 특이한 취향이 있어요. 초코와 민트는 절대 같이 안 먹어요!",
+                question: "7가지 맛 중에서 3가지 맛을 고를 때, **'초코'와 '민트'를 동시에 포함하지 않도록** 3가지 맛을 선택하는 경우의 수는?",
+                answer: 30, // 7C3 - 5C1 = 35 - 5 = 30
+                hint: "전체 경우의 수 \\({}_7\\text{C}_3 = 35\\)가지에서, '초코와 민트를 둘 다 고르는 경우(\\({}_5\\text{C}_1 = 5\\))'를 뺍니다.<br>\\(35 - 5 = 30\\)",
+                menu: {
+                    cones: ["컵"],
+                    flavors: ["초코", "민트", "바닐라", "딸기", "망고", "녹차", "쿠키"],
+                    toppings: ["없음"]
+                }
+            },
+            {
+                stageNum: 5,
+                title: "여집합 : 적어도 조건",
+                customerName: "상큼함을 찾는 유진",
+                avatar: "👩",
+                dialogue: "과일맛이 들어간 상큼한 조합이 좋아요!",
+                question: "과일맛 4가지와 디저트맛 4가지(총 8가지) 중 3가지 맛을 고를 때, **적어도 1개는 과일맛**이 포함되도록 고르는 경우의 수는?",
+                answer: 52, // 8C3 - 4C3 = 56 - 4 = 52
+                hint: "'적어도 하나~' 조건은 **여집합**을 씁니다.<br>(전체 \\({}_8\\text{C}_3 = 56\\)) - (모두 디저트맛만 선택 \\({}_4\\text{C}_3 = 4\\)) = \\(52\\)",
+                menu: {
+                    cones: ["빅컵"],
+                    flavors: ["과일맛 4종", "디저트맛 4종"],
+                    toppings: ["없음"]
+                }
+            },
+            {
+                stageNum: 6,
+                title: "복합 : 커플 주문",
+                customerName: "다정한 커플 손님",
+                avatar: "👩‍❤️‍👨",
+                dialogue: "저희 둘이 먹을 건데요, 서로 완벽히 똑같은 조합으로는 안 먹을래요!",
+                question: "콘 2종류 중 1개, 6가지 맛 중 서로 다른 2가지 맛을 고르는 레시피가 있습니다. A와 B 두 사람이 **서로 다른 조합**으로 주문하는 경우의 수는?",
+                answer: 870, // (2 * 6C2) = 30가지 레시피. A:30, B:29 -> 30 * 29 = 870
+                hint: "한 사람이 주문할 수 있는 가지 수: \\(2 \\times {}_6\\text{C}_2 = 30\\)가지.<br>A가 30가지 중 하나를 선택하면, B는 나머지 29가지 중 선택하므로 \\(30 \\times 29 = 870\\)",
+                menu: {
+                    cones: ["2종류 콘"],
+                    flavors: ["6가지 맛"],
+                    toppings: ["없음"]
+                }
+            }
+        ];
+
+        let currentStageIndex = 0;
+        let posInput = "";
+        let playerGold = 0;
+        let playerRating = 5.0;
+        let sandboxPickMode = 'comb';
+
+        // --- 3. 게임 초기화 및 스테이지 로딩 ---
+        function initGame() {
+            renderStageBullets();
+            loadStage(0);
+            updateSandbox();
+        }
+
+        function renderStageBullets() {
+            const container = document.getElementById('stage-bullets');
+            container.innerHTML = '';
+            stages.forEach((stg, idx) => {
+                const bullet = document.createElement('div');
+                bullet.className = `h-2.5 rounded-full flex-1 transition-all ${idx === 0 ? 'bg-pinky-500' : 'bg-slate-200'}`;
+                bullet.id = `bullet-${idx}`;
+                container.appendChild(bullet);
+            });
+        }
+
+        function loadStage(index) {
+            currentStageIndex = index;
+            const stg = stages[index];
+
+            // UI 바인딩
+            document.getElementById('stage-badge').innerText = `${stg.stageNum}/${stages.length}`;
+            document.getElementById('customer-avatar').innerText = stg.avatar;
+            document.getElementById('customer-name').innerText = stg.customerName;
+            document.getElementById('order-tag').innerText = stg.title;
+            document.getElementById('dialogue-text').innerText = `"${stg.dialogue}"`;
+            document.getElementById('question-prompt').innerHTML = stg.question;
+
+            // 메뉴판 업뎃
+            const board = document.getElementById('menu-board-content');
+            board.innerHTML = `
+                <div class="bg-pink-50 p-2.5 rounded-xl border border-pink-100">
+                    <span class="font-bold text-pinky-600 block mb-1">🍦 용기/콘</span>
+                    <p class="text-slate-600">${stg.menu.cones.join(', ')}</p>
+                </div>
+                <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-100">
+                    <span class="font-bold text-amber-600 block mb-1">🍓 아이스크림 맛</span>
+                    <p class="text-slate-600">${stg.menu.flavors.join(', ')}</p>
+                </div>
+                <div class="bg-teal-50 p-2.5 rounded-xl border border-teal-100">
+                    <span class="font-bold text-teal-600 block mb-1">🍒 토핑</span>
+                    <p class="text-slate-600">${stg.menu.toppings.join(', ')}</p>
+                </div>
+            `;
+
+            // 불릿 업데이트
+            stages.forEach((_, idx) => {
+                const b = document.getElementById(`bullet-${idx}`);
+                if (idx < index) b.className = 'h-2.5 rounded-full flex-1 bg-emerald-500';
+                else if (idx === index) b.className = 'h-2.5 rounded-full flex-1 bg-pinky-500 animate-pulse';
+                else b.className = 'h-2.5 rounded-full flex-1 bg-slate-200';
+            });
+
+            // 포스기 입력 초기화
+            posInput = "";
+            updatePosDisplay();
+
+            // MathJax 수식 렌더링
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        // --- 4. 포스기 키패드 입력 로직 ---
+        function pressKey(key) {
+            playSound('click');
+            if (key === 'DEL') {
+                posInput = posInput.slice(0, -1);
+            } else if (key === 'CLEAR') {
+                posInput = "";
+            } else {
+                if (posInput.length < 6) {
+                    posInput += key;
+                }
+            }
+            updatePosDisplay();
+        }
+
+        function updatePosDisplay() {
+            const display = document.getElementById('pos-display');
+            if (posInput === "") {
+                display.innerText = "_";
+                display.classList.add('opacity-40');
+            } else {
+                display.innerText = posInput;
+                display.classList.remove('opacity-40');
+            }
+        }
+
+        function submitOrderAnswer() {
+            if (posInput === "") return;
+
+            const playerAns = parseInt(posInput, 10);
+            const currentStg = stages[currentStageIndex];
+
+            if (playerAns === currentStg.answer) {
+                // 정답!
+                playSound('correct');
+                confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+
+                playerGold += 100;
+                document.getElementById('gold-display').innerText = playerGold;
+
+                const isLast = (typeof currentStageIndex === 'number' && currentStageIndex === stages.length - 1);
+                const nextBtnText = isLast ? "🏆 최종 영업 성공!" : "다음 단계로 ➡️";
+
+                showModal(
+                    "🎉 주문 계산 성공!",
+                    `<p class="text-emerald-600 font-bold text-base mb-2">정답입니다! (${currentStg.answer}가지)</p>
+                     <p class="text-slate-600 text-xs">${currentStg.hint}</p>`,
+                    () => {
+                        if (typeof currentStageIndex === 'number') {
+                            if (currentStageIndex < stages.length - 1) {
+                                // 맞추면 다음 단계로 이동
+                                loadStage(currentStageIndex + 1);
+                            } else {
+                                showModal("🏆 영업 성공! 경우의 수 마스터", "모든 손님의 주문을 완벽히 해결하셨습니다! 수고하셨습니다 점장님!", null, "확인");
+                            }
+                        } else {
+                            // 무한 모드일 경우 다음 랜덤 스테이지
+                            generateRandomStage();
+                        }
+                    },
+                    nextBtnText
+                );
+            } else {
+                // 오답!
+                playSound('wrong');
+                showModal(
+                    "❌ 다시 계산해 볼까요?",
+                    `<p class="text-rose-600 font-bold mb-2">손님이 갸우뚱합니다! (입력값: ${playerAns})</p>
+                     <p class="text-slate-600 text-xs mb-3">계산이 맞지 않습니다. 힌트를 확인하고 다시 계산해 보세요!</p>
+                     <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs text-amber-800">
+                        💡 <strong>힌트:</strong> ${currentStg.hint}
+                     </div>`,
+                    () => {
+                        // 오답 시 포스기 입력값을 자동으로 비워 다시 풀기 편리하게 설정
+                        posInput = "";
+                        updatePosDisplay();
+                    },
+                    "🔄 다시 풀어보기"
+                );
+            }
+        }
+
+        function generateRandomStage() {
+            playSound('click');
+            // 무작위 정수형 조합 생성
+            const n = Math.floor(Math.random() * 5) + 5; // 5~9
+            const r = Math.floor(Math.random() * 2) + 2; // 2~3
+            const ans = nCr(n, r);
+
+            const randomStg = {
+                stageNum: "🎲",
+                title: "랜덤 무한 모드",
+                customerName: "단골 손님",
+                avatar: "🧐",
+                dialogue: "아무렇게나 추천해 주세요!",
+                question: `아이스크림 ${n}가지 맛 중에서 서로 다른 ${r}가지 맛을 선택하는 경우의 수는?`,
+                answer: ans,
+                hint: `\\({}_{${n}}\\text{C}_{${r}} = ${ans}\\)`,
+                menu: {
+                    cones: ["랜덤 컵"],
+                    flavors: [`${n}가지 맛`],
+                    toppings: ["기본"]
+                }
+            };
+
+            stages[currentStageIndex] = randomStg;
+            loadStage(currentStageIndex);
+        }
+
+        // --- 5. 메뉴 연구소 (샌드박스) 로직 ---
+        function nCr(n, r) {
+            if (r < 0 || r > n) return 0;
+            if (r === 0 || r === n) return 1;
+            if (r > n / 2) r = n - r;
+            let res = 1;
+            for (let i = 1; i <= r; i++) {
+                res = res * (n - i + 1) / i;
+            }
+            return Math.round(res);
+        }
+
+        function nPr(n, r) {
+            if (r < 0 || r > n) return 0;
+            let res = 1;
+            for (let i = 0; i < r; i++) {
+                res *= (n - i);
+            }
+            return res;
+        }
+
+        function setSandboxPickMode(mode) {
+            playSound('click');
+            sandboxPickMode = mode;
+            const btnComb = document.getElementById('sb-mode-comb');
+            const btnPerm = document.getElementById('sb-mode-perm');
+
+            if (mode === 'comb') {
+                btnComb.className = "py-2.5 rounded-xl border border-pinky-500 bg-pink-50 text-pinky-600 font-bold text-xs flex flex-col items-center";
+                btnPerm.className = "py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs flex flex-col items-center hover:bg-slate-50";
+            } else {
+                btnPerm.className = "py-2.5 rounded-xl border border-pinky-500 bg-pink-50 text-pinky-600 font-bold text-xs flex flex-col items-center";
+                btnComb.className = "py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs flex flex-col items-center hover:bg-slate-50";
+            }
+            updateSandbox();
+        }
+
+        function updateSandbox() {
+            const cone = parseInt(document.getElementById('sb-range-cone').value, 10);
+            const n = parseInt(document.getElementById('sb-range-n').value, 10);
+            let r = parseInt(document.getElementById('sb-range-r').value, 10);
+            const topping = parseInt(document.getElementById('sb-range-topping').value, 10);
+
+            // r이 n보다 크지 않도록 보정
+            if (r > n) {
+                r = n;
+                document.getElementById('sb-range-r').value = r;
+            }
+
+            document.getElementById('sb-val-cone').innerText = `${cone}개`;
+            document.getElementById('sb-val-n').innerText = `${n}개`;
+            document.getElementById('sb-val-r').innerText = `${r}개`;
+            document.getElementById('sb-val-topping').innerText = `${topping}개`;
+
+            const flavorComb = (sandboxPickMode === 'comb') ? nCr(n, r) : nPr(n, r);
+            const toppingWays = topping + 1; // 안 올리는 경우 1 포함
+            const total = cone * flavorComb * toppingWays;
+
+            document.getElementById('sb-result-total').innerText = total.toLocaleString();
+
+            const mathBox = document.getElementById('sb-formula-math');
+            const modeSymbol = (sandboxPickMode === 'comb') ? `{}_{${n}}\\text{C}_{${r}}` : `{}_{${n}}\\text{P}_{${r}}`;
+            mathBox.innerHTML = `\\( ${cone} \\times ${modeSymbol} (${flavorComb}) \\times ${toppingWays} = ${total} \\)`;
+
+            if (window.MathJax) {
+                MathJax.typesetPromise([mathBox]);
+            }
+        }
+
+        // --- 6. 탭 전환 및 모달 컨트롤 ---
+        function switchTab(tabName) {
+            playSound('click');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            document.getElementById('section-game').classList.add('hidden');
+            document.getElementById('section-sandbox').classList.add('hidden');
+            document.getElementById('section-cheatsheet').classList.add('hidden');
+
+            document.getElementById(`section-${tabName}`).classList.remove('hidden');
+
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        function toggleHintModal() {
+            playSound('click');
+            const modal = document.getElementById('hint-modal');
+            const isHidden = modal.classList.contains('hidden');
+
+            if (isHidden) {
+                const stg = stages[currentStageIndex];
+                document.getElementById('modal-title').innerText = "💡 풀이 힌트";
+                document.getElementById('modal-content').innerHTML = `
+                    <p class="font-bold text-pinky-600">${stg.title}</p>
+                    <p class="bg-slate-50 p-3 rounded-xl border border-slate-200 mt-2">${stg.hint}</p>
+                `;
+                const btn = document.getElementById('modal-action-btn');
+                if (btn) {
+                    btn.innerText = "확인했습니다!";
+                    btn.onclick = () => modal.classList.add('hidden');
+                }
+                modal.classList.remove('hidden');
+                if (window.MathJax) MathJax.typesetPromise();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function showModal(title, contentHTML, callback, btnText = "확인했습니다!") {
+            const modal = document.getElementById('hint-modal');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-content').innerHTML = contentHTML;
+            modal.classList.remove('hidden');
+
+            const btn = document.getElementById('modal-action-btn') || modal.querySelector('button:last-child');
+            if (btn) {
+                btn.innerText = btnText;
+                btn.onclick = () => {
+                    modal.classList.add('hidden');
+                    if (callback) callback();
+                };
+            }
+
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        // 키보드 지원
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('section-game').classList.contains('hidden')) return;
+            if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+            else if (e.key === 'Backspace') pressKey('DEL');
+            else if (e.key === 'Enter') submitOrderAnswer();
+        });
+
+        // 페이지 로드 시 초기화
+        window.onload = () => {
+            initGame();
+        };
+    </script>
+</body>
+</html>
